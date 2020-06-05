@@ -1,8 +1,8 @@
-dksjfkadjfkj
 const readlineSync = require("readline-sync");
 const fetch = require("node-fetch");
 const _ = require("lodash");
 const { Select } = require("enquirer");
+const { rollD6, getStats } = require('./utilities');
 var inquirer = require("inquirer");
 //character object
 class Character {}
@@ -77,25 +77,6 @@ const chooseClass = async (race, race_data) => {
     console.log(error.message);
     return null;
   }
-};
-
-const rollD6 = () => {
-  const x = Math.floor(Math.random() * 6 + 1);
-  return x;
-};
-
-const getStats = () => {
-  const stats = [];
-  for (i = 1; i <= 6; i++) {
-    let value = [];
-    for (j = 1; j <= 4; j++) {
-      value.push(rollD6());
-    }
-    value.splice(value.indexOf(_.min(value)), 1);
-    let sum = _.sum(value);
-    stats.push(sum);
-  }
-  return stats;
 };
 
 const retrieveStat = async (stat) =>{
@@ -214,14 +195,12 @@ const app = async () => {
 .prompt([
   {
     type: 'checkbox',
-    message: 'Select toppings',
+    message: 'Select your proficiencies',
     name: 'Proficiencies',
     choices: character.your_class.proficiency_choices[0].from,
     validate: function(answer) {
-      if (answer.length < 1) {
-        return 'You must choose.';
-      }
-      if(answer.length > character.your_class.proficiency_choices[0].choose){
+      if (answer.length != character.your_class.proficiency_choices[0].choose) {
+        return `You must choose ${character.your_class.proficiency_choices[0].choose}`;
       }
 
       return true;
