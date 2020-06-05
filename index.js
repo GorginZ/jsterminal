@@ -1,8 +1,7 @@
-const readlineSync = require("readline-sync");
-const fetch = require("node-fetch");
 const _ = require("lodash");
 const { Select } = require("enquirer");
 const { rollD6, getStats } = require('./utilities');
+const { chooseClass, retrieveStat, requestRaces } = require('./char_api');
 var inquirer = require("inquirer");
 //character object
 class Character {}
@@ -10,21 +9,6 @@ class Character {}
 // console.log("Hi there, welcome to the counsel")
 
 // console.log("There is great wisdom here")
-const requestRaces = async () => {
-  try {
-    const BASE_URL = "https://www.dnd5eapi.co/api/";
-    const response = await fetch(`${BASE_URL}/races`);
-
-    if (!response.ok) throw new Error("Race not Found!");
-
-    const data = await response.json();
-
-    return data;
-  } catch (error) {
-    console.log(error.message);
-    return null;
-  }
-};
 
 const chooseRace = async (race_data) => {
   //   console.log(race_data);
@@ -34,66 +18,27 @@ const chooseRace = async (race_data) => {
     races.push(value["name"]);
   }
   //   console.log(races);
-  index = readlineSync.keyInSelect(races, "Which race?");
-  if (index === -1) {
-    process.exit();
-  }
-  console.log("Ok, " + races[index]);
-  const your_race = races[index];
+  let your_race  = '';
+  await inquirer
+  .prompt([
+    {
+      type: "list",
+      name: `race`,
+      message: `Which race?`,
+      choices: races,
+    },
+  ])
+  .then((answers) => {
+    console.log(answers);
+    your_race = answers.race;
+  });
+
+  // index = readlineSync.keyInSelect(races, "Which race?");
+  // if (index === -1) {
+  //   process.exit();
+  // }
+  console.log("Ok, " + your_race);
   return your_race;
-};
-
-const chooseClass = async (race, race_data) => {
-  try {
-    const BASE_URL = "https://www.dnd5eapi.co/api/";
-    const response = await fetch(`${BASE_URL}/classes`);
-
-    if (!response.ok) throw new Error("classes not Found!");
-
-    const data = await response.json();
-    const classes = [];
-
-    for (value of data.results) {
-      classes.push(value["name"]);
-    }
-
-    index = readlineSync.keyInSelect(classes, `What class are you ${race}?`);
-
-    if (index === -1) {
-      process.exit();
-    }
-
-    console.log("Ok, " + classes[index]);
-    const your_class_response = await fetch(
-      `${BASE_URL}/classes/${classes[index].toLowerCase()}`
-    );
-
-    if (!your_class_response.ok) throw new Error("class not Found!");
-
-    const your_class = await your_class_response.json();
-
-    return your_class;
-  } catch (error) {
-    console.log(error.message);
-    return null;
-  }
-};
-
-const retrieveStat = async (stat) =>{
-  try {
-    const BASE_URL = "https://www.dnd5eapi.co/api/";
-    const response = await fetch(`${BASE_URL}/ability-scores/${stat}`);
-
-    if (!response.ok) throw new Error("Stat not Found!");
-
-    const data = await response.json();
-
-    return data;
-  } catch (error) {
-    console.log(error.message);
-    return null;
-  }
-}
 
 // const statSelector = (stringStats, stat) => {
 //   let prompt = new Select({
@@ -109,6 +54,7 @@ const retrieveStat = async (stat) =>{
 //     })
 //     .catch(console.error);
 // };
+}
 
 const app = async () => {
   // creates your character
@@ -118,27 +64,47 @@ const app = async () => {
   character.your_class = await chooseClass(character.your_race, race_data);
 
   // await new Promise(r => setTimeout(r, 2000));
-
+  
   let name = "";
-  name = readlineSync.question("What is your name? ");
+  await inquirer.prompt(
+    {
+      type: 'input',
+      name: 'name',
+      message: "What is your name?"
+    }
+    ).then(answers => {
+    name = answers.name;
+  });
 
-  (alignment = [
+  // name = readlineSync.question("What is your name? ");
+
+  
+  alignment = [
     "Lawful Good",
     "Chaotic Good",
     "Chaotic Neutral",
     "Lawful Neutral",
     "Chaotic Evil",
     "Lawful Evil",
-  ]),
-    (alignment_index = readlineSync.keyInSelect(
-      alignment,
-      `What is your alignment ${name} the ${character.your_race}?`
-    ));
-  console.log("Ok, " + alignment[alignment_index] + " is your alignment.");
-
-  console.log(
+  ]
+    await inquirer
+    .prompt([
+      {
+        type: "list",
+        name: `alignment`,
+        message: `What is your alignment ${name} the ${character.your_race}?`,
+        choices: alignment,
+      },
+     ])
+    .then((answers) => {
+       console.log(answers);
+       your_alignment = answers.alignment;
+     });
+    console.log("Ok, " + your_alignment + " is your alignment.");
+    
+    console.log(
     name +
-      "  Now we must see what your strengths are, there is a great journey ahead of you"
+      "  Now we must see what your abilities are, there is a great journey ahead of you!"
   );
 
   // each class has different starting values
@@ -187,29 +153,32 @@ const app = async () => {
       });
     }
     
+    
     // await console.log(character);
-    await console.log(character.your_class.proficiencies);
-    await console.log(character.your_class.proficiency_choices);
-    // for(j = 1; j <= character.your_class.)
-    inquirer
-.prompt([
-  {
-    type: 'checkbox',
-    message: 'Select your proficiencies',
-    name: 'Proficiencies',
-    choices: character.your_class.proficiency_choices[0].from,
-    validate: function(answer) {
-      if (answer.length != character.your_class.proficiency_choices[0].choose) {
-        return `You must choose ${character.your_class.proficiency_choices[0].choose}`;
-      }
-
-      return true;
+    // await console.log(character.your_class.proficiencies);
+    // await console.log(character.your_class.proficiency_choices);
+    for(i = 0; i < character.your_class.proficiency_choices.length; i++){
+      await console.log(`Choose ${character.your_class.proficiency_choices[i].choose} proficiencies`);
+      await inquirer
+        .prompt([
+        {
+          type: 'checkbox',
+          message: 'Select your proficiencies',
+          name: `proficiencies`,
+          choices: character.your_class.proficiency_choices[i].from,
+          validate: function(answer) {
+            if (answer.length != character.your_class.proficiency_choices[i].choose) {
+              return `You must choose ${character.your_class.proficiency_choices[i].choose}`;
+            }
+  
+            return true;
+          }
+        }
+      ])
+      .then(answers => {
+        character[`Proficiency#${i+1}`] = answers.proficiencies;
+      });
     }
-  }
-])
-.then(answers => {
-  console.log(JSON.stringify(answers, null, '  '));
-});
     // for(i = 1; i <= character.your_class.proficiency_choices[0].choose; i++){
     //   await inquirer
     //   .prompt([
@@ -226,6 +195,7 @@ const app = async () => {
     //   });
     // }
   // console.log(name + " I can see you're troubled.")
+  console.log(character);
 };
 
 app();
