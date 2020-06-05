@@ -2,8 +2,9 @@ const readlineSync = require("readline-sync");
 const fetch = require("node-fetch");
 const _ = require("lodash");
 const { Select } = require("enquirer");
+const { rollD6, getStats } = require('./utilities');
 var inquirer = require("inquirer");
-
+//character object
 class Character {}
 
 // console.log("Hi there, welcome to the counsel")
@@ -78,24 +79,21 @@ const chooseClass = async (race, race_data) => {
   }
 };
 
-const rollD6 = () => {
-  const x = Math.floor(Math.random() * 6 + 1);
-  return x;
-};
+const retrieveStat = async (stat) =>{
+  try {
+    const BASE_URL = "https://www.dnd5eapi.co/api/";
+    const response = await fetch(`${BASE_URL}/ability-scores/${stat}`);
 
-const getStats = () => {
-  const stats = [];
-  for (i = 1; i <= 6; i++) {
-    let value = [];
-    for (j = 1; j <= 4; j++) {
-      value.push(rollD6());
-    }
-    value.splice(value.indexOf(_.min(value)), 1);
-    let sum = _.sum(value);
-    stats.push(sum);
+    if (!response.ok) throw new Error("Stat not Found!");
+
+    const data = await response.json();
+
+    return data;
+  } catch (error) {
+    console.log(error.message);
+    return null;
   }
-  return stats;
-};
+}
 
 // const statSelector = (stringStats, stat) => {
 //   let prompt = new Select({
@@ -113,10 +111,11 @@ const getStats = () => {
 // };
 
 const app = async () => {
+  // creates your character
   const character = new Character();
   const race_data = await requestRaces();
   character.your_race = await chooseRace(race_data);
-  const your_class = await chooseClass(character.your_race, race_data);
+  character.your_class = await chooseClass(character.your_race, race_data);
 
   // await new Promise(r => setTimeout(r, 2000));
 
@@ -148,29 +147,31 @@ const app = async () => {
   // dice roll for stats
   // can reroll but only once
   // 1 extra point to 2 different skills
-  // race influences starting skills
+  // race influences starting skills 
 
   const stats = getStats();
   const stringStats = [];
   stats.forEach((number) => {
     stringStats.push(number.toString());
   });
-
+ 
   let stat_string = "You rolled";
   for (num of stats) {
     stat_string += `, ${num}`;
   }
   console.log(stat_string);
   const stat_names = [
-    "strength",
-    "dexterity",
-    "constitution",
-    "intelligence",
-    "wisdom",
-    "charisma",
+    "str",
+    "dex",
+    "con",
+    "int",
+    "wis",
+    "cha",
   ];
 
   for (stat of stat_names) {
+    const ability =  await retrieveStat(stat);
+    console.log(ability.desc[0]);
     await inquirer
       .prompt([
         {
@@ -182,11 +183,48 @@ const app = async () => {
       ])
       .then((answers) => {
         stringStats.splice(stringStats.indexOf(answers[stat]), 1);
-        character[stat] = answers;
+        character[stat] = answers[stat];
       });
     }
     
-    await console.log(character);
+    // await console.log(character);
+    await console.log(character.your_class.proficiencies);
+    await console.log(character.your_class.proficiency_choices);
+    // for(j = 1; j <= character.your_class.)
+    inquirer
+.prompt([
+  {
+    type: 'checkbox',
+    message: 'Select your proficiencies',
+    name: 'Proficiencies',
+    choices: character.your_class.proficiency_choices[0].from,
+    validate: function(answer) {
+      if (answer.length != character.your_class.proficiency_choices[0].choose) {
+        return `You must choose ${character.your_class.proficiency_choices[0].choose}`;
+      }
+
+      return true;
+    }
+  }
+])
+.then(answers => {
+  console.log(JSON.stringify(answers, null, '  '));
+});
+    // for(i = 1; i <= character.your_class.proficiency_choices[0].choose; i++){
+    //   await inquirer
+    //   .prompt([
+    //     {
+    //       type: "list",
+    //       name: `Proficiency ${i}`,
+    //       message: `What proficiency do want?`,
+    //       choices: character.your_class.proficiency_choices[0].from
+    //     },
+    //   ])
+    //   .then((answers) => {
+    //     // stringStats.splice(stringStats.indexOf(answers[stat]), 1);
+    //     character[`proficiency${i}`] = answers[stat];
+    //   });
+    // }
   // console.log(name + " I can see you're troubled.")
 };
 
