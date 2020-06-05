@@ -10,6 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "enquirer": "^2.3.5",
+    "inquirer": "^7.1.0",
+    "lodash": "^4.17.15",
     "node-fetch": "^2.6.0",
     "readline-sync": "^1.4.10"
   }
