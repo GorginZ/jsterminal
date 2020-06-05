@@ -1,3 +1,4 @@
+const chalk = require('chalk');
 const _ = require("lodash");
 const { Select } = require("enquirer");
 const { rollD6, getStats } = require('./utilities');
@@ -5,10 +6,6 @@ const { chooseClass, retrieveStat, requestRaces } = require('./char_api');
 var inquirer = require("inquirer");
 //character object
 class Character {}
-
-// console.log("Hi there, welcome to the counsel")
-
-// console.log("There is great wisdom here")
 
 const chooseRace = async (race_data) => {
   //   console.log(race_data);
@@ -32,11 +29,7 @@ const chooseRace = async (race_data) => {
     console.log(answers);
     your_race = answers.race;
   });
-
-  // index = readlineSync.keyInSelect(races, "Which race?");
-  // if (index === -1) {
-  //   process.exit();
-  // }
+  
   console.log("Ok, " + your_race);
   return your_race;
 
@@ -57,6 +50,8 @@ const chooseRace = async (race_data) => {
 }
 
 const app = async () => {
+  console.log(chalk.blue('Welcome Adventurer! Your journey begins!'));
+
   // creates your character
   const character = new Character();
   const race_data = await requestRaces();
@@ -64,7 +59,7 @@ const app = async () => {
   character.your_class = await chooseClass(character.your_race, race_data);
 
   // await new Promise(r => setTimeout(r, 2000));
-  
+
   let name = "";
   await inquirer.prompt(
     {
